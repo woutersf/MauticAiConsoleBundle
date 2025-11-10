@@ -16,6 +16,11 @@ class AiConsoleIntegration extends AbstractIntegration
         return 'AI Console';
     }
 
+    public function getDescription(): string
+    {
+        return 'AI-powered console interface for Mautic. Configuration for this plugin is available in Settings → Configuration (or /s/config/edit).';
+    }
+
     public function getAuthenticationType(): string
     {
         return 'none';

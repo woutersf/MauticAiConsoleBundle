@@ -6,7 +6,7 @@ return [
     'name'        => 'AI Console',
     'description' => 'AI-powered console interface for Mautic with Minecraft-style dark overlay',
     'version'     => '1.0.0',
-    'author'      => 'Mautic Community',
+    'author'      => 'Frederik Wouters',
     'icon'        => 'plugins/MauticAiConsoleBundle/Assets/mauticbot.png',
 
     'routes' => [
