@@ -25,4 +25,12 @@ class AiConsoleIntegration extends AbstractIntegration
     {
         return [];
     }
+
+    /**
+     * Get the path to the integration icon
+     */
+    public function getIcon(): string
+    {
+        return 'plugins/MauticAiConsoleBundle/Assets/mauticbot.png';
+    }
 }
