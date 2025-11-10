@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'name'        => 'Mautic AI Console',
+    'name'        => 'AI Console',
     'description' => 'AI-powered console interface for Mautic with Minecraft-style dark overlay',
     'version'     => '1.0.0',
     'author'      => 'Mautic Community',
