@@ -12,6 +12,7 @@ The Mautic AI Console Bundle provides an intelligent assistant that helps users 
 
 ## Features
 
+- **Game-Like Console Toggle** - Instant access via keyboard (console key ` or § key) - just like Counter-Strike or Minecraft!
 - **Natural Language Interface** - Chat with Mautic in plain language
 - **Voice Input Support** - Speak to the AI using speech-to-text (Whisper integration)
 - **Context-Aware** - Knows your name, language, and Mautic version
@@ -198,7 +199,13 @@ Enable or disable specific tools that the AI can execute:
 
 ### Accessing the Console
 
-Once configured, the AI Console button appears in the Mautic toolbar (top right).
+The AI Console can be accessed in two ways:
+
+1. **Keyboard Toggle (Recommended)** - Press the **console key** (` or ~ key, depending on your keyboard layout) or the **paragraph key** (§) to instantly toggle the AI Console on/off. This provides quick, game-like access similar to consoles in Counter-Strike or Minecraft.
+
+2. **Toolbar Button** - Click the AI Console button in the Mautic toolbar (top right).
+
+**Pro Tip:** The keyboard toggle is the fastest way to access the AI while working in Mautic!
 
 ### Asking Questions
 
@@ -333,7 +340,13 @@ AI: "892 contacts are subscribed to your emails."
 
 ### AI responses are in the wrong language
 
-**Solution:** Update the pre-prompt to use `{language}` token and ensure your Mautic user profile has the correct language set.
+**Solution:**
+
+1. **Check your Mautic user profile language** - Go to your user profile settings and verify the language is set correctly. This language preference is automatically passed to the AI via the `{language}` token in the pre-prompt.
+
+2. **Verify the pre-prompt uses the `{language}` token** - Ensure your pre-prompt includes instructions like `You answer in {language}` so the AI knows which language to respond in.
+
+3. **Example:** If your profile is set to French, the `{language}` token will be replaced with "French" in the instructions sent to the AI.
 
 ### Speech-to-text not working
 
