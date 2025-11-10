@@ -1,0 +1,57 @@
+{% block aiconsoleconfig_widget %}
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            <h3 class="panel-title">{{ 'mautic.ai_console.config.header'|trans }}</h3>
+        </div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-md-12">
+                    {{ form_row(form.ai_console_enabled) }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form_row(form.ai_console_model) }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    {{ form_row(form.pre_prompt) }}
+                </div>
+            </div>
+            {% if form.children|length > 5 %}
+            <div class="row">
+                <div class="col-md-12">
+                    <h4>{{ 'mautic.ai_console.config.tools.header'|trans }}</h4>
+                    <p class="text-muted">{{ 'mautic.ai_console.config.tools.description'|trans }}</p>
+                </div>
+            </div>
+            <div class="row">
+                {% for child in form.children %}
+                    {% if child.vars.name starts with 'tool_' %}
+                        <div class="col-md-6">
+                            {{ form_row(child) }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="row">
+                <div class="col-md-12">
+                    <h4>{{ 'mautic.ai_console.config.speech_to_text.header'|trans }}</h4>
+                    <p class="text-muted">{{ 'mautic.ai_console.config.speech_to_text.description'|trans }}</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form_row(form.speech_to_text_enabled) }}
+                </div>
+                <div class="col-md-6">
+                    {{ form_row(form.speech_to_text_model) }}
+                </div>
+            </div>
+            
+        </div>
+    </div>
+{% endblock %}
