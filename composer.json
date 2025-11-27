@@ -1,5 +1,5 @@
 {
-    "name": "mautic/ai-console-bundle",
+    "name": "woutersf/ai-console-bundle",
     "description": "AI-powered console interface for Mautic with voice input and intelligent assistance",
     "type": "mautic-plugin",
     "license": "GPL-3.0-or-later",
