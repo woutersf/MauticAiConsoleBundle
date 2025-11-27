@@ -684,7 +684,7 @@ class MauticAiConsole {
         // Auto-hide after 5 seconds
         const autoHideTimer = setTimeout(() => {
             this.hideFirstTimeTooltip(tooltip);
-        }, 5000);
+        }, 30000);
 
         // Close button functionality
         const closeBtn = tooltip.querySelector('.tooltip-close');
