@@ -3,6 +3,7 @@
 namespace MauticPlugin\MauticAiConsoleBundle\Controller;
 
 use Mautic\CoreBundle\Controller\CommonController;
+use Mautic\CoreBundle\Helper\CacheHelper;
 use MauticPlugin\MauticAiConsoleBundle\Entity\AiLog;
 use MauticPlugin\MauticAIconnectionBundle\Service\LiteLLMService;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -14,13 +15,13 @@ class ConsoleController extends CommonController
     {
         return array_merge(parent::getSubscribedServices(), [
             'mautic.ai_connection.service.litellm' => LiteLLMService::class,
+            'mautic.helper.cache'                  => CacheHelper::class,
         ]);
     }
 
-    public function postActionRedirect($args = [])
+    public function postActionRedirect(array $args = []): \Symfony\Component\HttpFoundation\RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
-        // Disable post action redirect for streaming responses
-        return null;
+        return parent::postActionRedirect($args);
     }
 
     public function processAction(Request $request)
@@ -43,9 +44,8 @@ class ConsoleController extends CommonController
             $liteLLMService = $this->container->get('mautic.ai_connection.service.litellm');
 
             // Get configuration from core parameters
-            $coreParametersHelper = $this->factory->getHelper('core_parameters');
-            $aiModel = $coreParametersHelper->get('ai_console_model', 'gpt-3.5-turbo');
-            $prePrompt = $coreParametersHelper->get('pre_prompt', 'You are a helpful AI assistant integrated into Mautic.');
+            $aiModel = $this->coreParametersHelper->get('ai_console_model', 'gpt-3.5-turbo');
+            $prePrompt = $this->coreParametersHelper->get('pre_prompt', 'You are a helpful AI assistant integrated into Mautic.');
 
             // Get user's locale, name, email, and Mautic version, replace tokens in pre-prompt
             $userLocale = 'English'; // Default fallback
@@ -55,13 +55,8 @@ class ConsoleController extends CommonController
             $mauticVersion = 'Unknown'; // Default fallback
 
             // Get Mautic version
-            try {
-                $appVersionHelper = $this->factory->getHelper('app_version');
-                if ($appVersionHelper && method_exists($appVersionHelper, 'getVersion')) {
-                    $mauticVersion = $appVersionHelper->getVersion();
-                }
-            } catch (\Exception $e) {
-                // Keep default fallback value
+            if (defined('MAUTIC_VERSION')) {
+                $mauticVersion = MAUTIC_VERSION;
             }
 
             if ($user) {
@@ -105,7 +100,7 @@ class ConsoleController extends CommonController
                                    $prePrompt);
 
             // Create initial log entry using entity manager directly
-            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager = $this->doctrine->getManager();
             $aiLog = new AiLog();
             $aiLog->setUserId($userId);
             $aiLog->setPrompt($input);
@@ -157,10 +152,10 @@ class ConsoleController extends CommonController
             ];
 
             // Detect and add available tools
-            $tools = $this->getAvailableTools($coreParametersHelper);
+            $tools = $this->getAvailableTools();
 
             // Generate Mautic instance fingerprint
-            $mauticFingerprint = $this->generateMauticFingerprint($coreParametersHelper);
+            $mauticFingerprint = $this->generateMauticFingerprint();
 
             // Build options for LiteLLM service
             $options = [
@@ -176,6 +171,7 @@ class ConsoleController extends CommonController
             }
 
             // Make API call using LiteLLM service
+
             $responseData = $liteLLMService->getChatCompletion($messages, $options);
 
             if (!isset($responseData['choices'][0]['message'])) {
@@ -219,7 +215,7 @@ class ConsoleController extends CommonController
         }
 
         try {
-            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager = $this->doctrine->getManager();
 
             // Get current user
             $user = $this->getUser();
@@ -263,7 +259,7 @@ class ConsoleController extends CommonController
         }
     }
 
-    private function getAvailableTools($coreParametersHelper): array
+    private function getAvailableTools(): array
     {
         $tools = [];
         $toolsDirectory = __DIR__ . '/../Tools';
@@ -287,7 +283,7 @@ class ConsoleController extends CommonController
 
             // Check if tool is enabled in configuration
             $configKey = 'tool_' . strtolower(str_replace('\\', '_', $fullClassName));
-            if (!$coreParametersHelper->get($configKey, false)) {
+            if (!$this->coreParametersHelper->get($configKey, false)) {
                 continue; // Tool not enabled
             }
 
@@ -387,13 +383,13 @@ class ConsoleController extends CommonController
     {
         // Check tool type and inject required dependencies
         if (strpos($fullClassName, 'CreateContactTool') !== false) {
-            $leadModel = $this->factory->getModel('lead');
+            $leadModel = $this->getModel('lead');
             return new $fullClassName($leadModel, $this->translator);
         } else if (strpos($fullClassName, 'CreateSegmentTool') !== false) {
-            $listModel = $this->factory->getModel('lead.list');
+            $listModel = $this->getModel('lead.list');
             return new $fullClassName($listModel, $this->translator);
         } else if (strpos($fullClassName, 'ClearCacheTool') !== false) {
-            $cacheHelper = $this->factory->getHelper('cache');
+            $cacheHelper = $this->container->get('mautic.helper.cache');
             return new $fullClassName($cacheHelper, $this->translator);
         } else {
             // Default instantiation without dependencies
@@ -486,7 +482,7 @@ class ConsoleController extends CommonController
      * Generate a unique fingerprint for this Mautic instance
      * This helps identify if multiple Mautic instances are using the same AI key
      */
-    private function generateMauticFingerprint($coreParametersHelper): string
+    private function generateMauticFingerprint(): string
     {
         // Gather system-specific information
         $fingerprintData = [];
@@ -495,20 +491,20 @@ class ConsoleController extends CommonController
         $fingerprintData[] = php_uname('n');
 
         // Add site URL if available
-        $siteUrl = $coreParametersHelper->get('site_url', '');
+        $siteUrl = $this->coreParametersHelper->get('site_url', '');
         if (!empty($siteUrl)) {
             $fingerprintData[] = $siteUrl;
         }
 
         // Add database configuration (without sensitive data)
-        $dbHost = $coreParametersHelper->get('db_host', '');
-        $dbName = $coreParametersHelper->get('db_name', '');
+        $dbHost = $this->coreParametersHelper->get('db_host', '');
+        $dbName = $this->coreParametersHelper->get('db_name', '');
         if (!empty($dbHost) && !empty($dbName)) {
             $fingerprintData[] = $dbHost . ':' . $dbName;
         }
 
         // Add secret key (if available) to make fingerprint unique
-        $secretKey = $coreParametersHelper->get('secret_key', '');
+        $secretKey = $this->coreParametersHelper->get('secret_key', '');
         if (!empty($secretKey)) {
             $fingerprintData[] = $secretKey;
         }
@@ -522,8 +518,7 @@ class ConsoleController extends CommonController
     {
         // Handle HEAD request for config check
         if ($request->getMethod() === 'HEAD') {
-            $coreParametersHelper = $this->factory->getHelper('core_parameters');
-            $speechEnabled = $coreParametersHelper->get('speech_to_text_enabled', false);
+            $speechEnabled = $this->coreParametersHelper->get('speech_to_text_enabled', false);
 
             if ($speechEnabled) {
                 return new JsonResponse(['enabled' => true]);
@@ -540,10 +535,8 @@ class ConsoleController extends CommonController
             // Get LiteLLM service
             $liteLLMService = $this->container->get('mautic.ai_connection.service.litellm');
 
-            $coreParametersHelper = $this->factory->getHelper('core_parameters');
-
             // Check if speech-to-text is enabled
-            if (!$coreParametersHelper->get('speech_to_text_enabled', false)) {
+            if (!$this->coreParametersHelper->get('speech_to_text_enabled', false)) {
                 return new JsonResponse(['error' => 'Speech-to-text is not enabled'], 403);
             }
 
@@ -554,7 +547,7 @@ class ConsoleController extends CommonController
             }
 
             // Get configuration
-            $speechModel = $coreParametersHelper->get('speech_to_text_model', 'whisper-1');
+            $speechModel = $this->coreParametersHelper->get('speech_to_text_model', 'whisper-1');
 
             // Prepare the file for upload to LiteLLM
             $audioData = file_get_contents($audioFile->getPathname());
@@ -572,7 +565,7 @@ class ConsoleController extends CommonController
             }
 
             // Generate Mautic instance fingerprint
-            $mauticFingerprint = $this->generateMauticFingerprint($coreParametersHelper);
+            $mauticFingerprint = $this->generateMauticFingerprint();
 
             // Call speech-to-text service
             $transcribedText = $liteLLMService->speechToText($audioData, $userLanguage, $speechModel, $mauticFingerprint);
